@@ -1,11 +1,36 @@
 Package: epipool
-Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Title: Estimate prevalence from pooled test results
+Version: 0.0.0.9000
+Authors@R: 
+    person("Anthony", "Hauser", , "anthony.hauser@ispm.unibe.ch", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-7221-1929"))
+Description: The epipool package provides methods to estimate the prevalence over time from pooled test results.
+    It uses.
+License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
+    license
 Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.1
+Biarch: true
+Depends: 
+    R (>= 3.4.0)
+Imports: 
+    dplyr,
+    methods,
+    Rcpp (>= 0.12.0),
+    RcppParallel (>= 5.0.1),
+    rstan (>= 2.26.13),
+    rstantools (>= 2.2.0),
+    tibble,
+    tidyr
+LinkingTo: 
+    BH (>= 1.66.0),
+    Rcpp (>= 0.12.0),
+    RcppEigen (>= 0.3.3.3.0),
+    RcppParallel (>= 5.0.1),
+    rstan (>= 2.18.1),
+    StanHeaders (>= 2.18.0)
+SystemRequirements: GNU make
 LazyData: true
+Additional_repositories:
+    https://mc-stan.org/r-packages/
