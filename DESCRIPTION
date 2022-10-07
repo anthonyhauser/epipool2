@@ -34,3 +34,5 @@ SystemRequirements: GNU make
 LazyData: true
 Additional_repositories:
     https://mc-stan.org/r-packages/
+URL: https://github.com/anthonyhauser/epipool
+BugReports: https://github.com/anthonyhauser/epipool/issues
