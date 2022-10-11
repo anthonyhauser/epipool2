@@ -39,11 +39,12 @@
 #'     add `control=list(adapt_delta=0.99)`.
 #' @return A list containing the following elements:
 #' \itemize{
-#'   \item prev. A data frame displaying estimated prevalence over time, regions (and populations).
-#'   \item pop. Population name (if missing, it assumes an unique population to analyse)
-#'   \item pool.size. Pool size (number of samples by pool)
-#'   \item n.pools. Number of pools
-#'   \item n.pos.pools. Number of positive pools.
+#'   \item prev. A data frame displaying estimated prevalence over time (and populations).
+#'   \item prev_ratio. Ratio between two consecutive prevalence estimates.
+#'   \item mod_par. Estimates of some model parameters (returned if `return.par` is `TRUE`).
+#'   \item sampler_par. Stan diagnosis parameters (returned if `return.par` is `TRUE`).
+#'   \item time. Stan sampling time (returned if `return.par` is `TRUE`).
+#'   \item stanfit. Stan model fit (returned if `return.stanfit` is `TRUE`)
 #' }
 #' @importFrom dplyr %>%
 #' @examples
