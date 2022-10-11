@@ -17,10 +17,6 @@ RcppExport SEXP _rcpp_module_boot_stan_fit4mod1_timepoint_mod();
 RcppExport SEXP _rcpp_module_boot_stan_fit4mod2_GP_mod();
 RcppExport SEXP _rcpp_module_boot_stan_fit4mod2_GP_sens100_mod();
 RcppExport SEXP _rcpp_module_boot_stan_fit4mod2_timepoint_mod();
-RcppExport SEXP _rcpp_module_boot_stan_fit4mod3_GP_mod();
-RcppExport SEXP _rcpp_module_boot_stan_fit4mod3_timepoint_mod();
-RcppExport SEXP _rcpp_module_boot_stan_fit4mod4_GP_mod();
-RcppExport SEXP _rcpp_module_boot_stan_fit4mod4_timepoint_mod();
 RcppExport SEXP _rcpp_module_boot_stan_fit4mod_GP_mod();
 RcppExport SEXP _rcpp_module_boot_stan_fit4mod_GP_overdisp_mod();
 RcppExport SEXP _rcpp_module_boot_stan_fit4mod_timepoint_mod();
@@ -32,10 +28,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rcpp_module_boot_stan_fit4mod2_GP_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4mod2_GP_mod, 0},
     {"_rcpp_module_boot_stan_fit4mod2_GP_sens100_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4mod2_GP_sens100_mod, 0},
     {"_rcpp_module_boot_stan_fit4mod2_timepoint_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4mod2_timepoint_mod, 0},
-    {"_rcpp_module_boot_stan_fit4mod3_GP_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4mod3_GP_mod, 0},
-    {"_rcpp_module_boot_stan_fit4mod3_timepoint_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4mod3_timepoint_mod, 0},
-    {"_rcpp_module_boot_stan_fit4mod4_GP_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4mod4_GP_mod, 0},
-    {"_rcpp_module_boot_stan_fit4mod4_timepoint_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4mod4_timepoint_mod, 0},
     {"_rcpp_module_boot_stan_fit4mod_GP_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4mod_GP_mod, 0},
     {"_rcpp_module_boot_stan_fit4mod_GP_overdisp_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4mod_GP_overdisp_mod, 0},
     {"_rcpp_module_boot_stan_fit4mod_timepoint_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4mod_timepoint_mod, 0},
