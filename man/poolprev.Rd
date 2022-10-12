@@ -75,7 +75,7 @@ The \code{timepoint} model is provided for the sake of comparison but the \code{
 
 The models adjust for imperfect sensitivity and specificity.
 They assume a default fixed specificity of 99.5\% (can be modified through the \code{spec} argument).
-The sensitivity is fitted together with the prevalence parameters by using the data reported in Bendavid et al. (2020), which includes 3 sensitivity studies.
+The sensitivity is fitted together with the prevalence parameters by using the data reported in Bendavid et al. (2020), which includes three sensitivity studies.
 
 \strong{Inference}
 
@@ -104,14 +104,16 @@ The sensitivity \code{sens} has a beta prior distribution whose default hyperpar
 This corresponds to a mean of approximately 82.6\% and with 95\% CI of (77.5\%, 87.2\%).
 }
 \examples{
+
+######################
 #Example 1
 #load data
 data(epipool_data1)
 
 #run model with method assuming a prevalence parameter every week
-out_timepoint = poolprev2(epipool_data1[[1]], method="timepoint", return.par=TRUE,return.stanfit=FALSE) #takes a few seconds
+out_timepoint = poolprev(epipool_data1[[1]], method="timepoint", return.par=TRUE,return.stanfit=FALSE) #takes a few seconds
 #run model with Gaussian process
-out_GP = poolprev2(epipool_data1[[1]], method="GP", return.par=TRUE,return.stanfit=FALSE) #can take a few minutes
+out_GP = poolprev(epipool_data1[[1]], method="GP", return.par=TRUE,return.stanfit=FALSE) #can take a few minutes
 
 #plot
 library(ggplot2)
@@ -129,6 +131,7 @@ dplyr::left_join(epipool_data1[[1]],
   theme_bw() +
   scale_y_continuous(name="Prevalence", labels = scales::percent)
 
+######################
 #Example 2: estimate the prevalence of two populations
 #load data
 data(epipool_data2)
@@ -137,9 +140,9 @@ data = rbind(epipool_data2[[1]] \%>\% dplyr::mutate(pop="pop1"),
             epipool_data3[[1]] \%>\% dplyr::mutate(pop="pop2"))
 
 #run model with GP
-out_timepoint = poolprev2(data, method="timepoint", return.par=TRUE) #takes a few seconds
-out_GP1 = poolprev2(data, method="GP", return.par=TRUE) #can take a few minutes
-out_GP2 = poolprev2(data, method="GP",prior=list(lengthscale=c(0,1),sd_GP=c(0,1)),
+out_timepoint = poolprev(data, method="timepoint", return.par=TRUE) #takes a few seconds
+out_GP1 = poolprev(data, method="GP", return.par=TRUE) #can take a few minutes
+out_GP2 = poolprev(data, method="GP",prior=list(lambda=c(0,1),alpha=c(0,1)),
                      return.par=TRUE) #can take a few minutes
 
 #plot prevalence
