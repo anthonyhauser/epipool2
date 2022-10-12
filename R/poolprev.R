@@ -5,33 +5,55 @@
 #' `poolprev` is used to estimate prevalence from pooled test results over time.
 #' It fits a Bayesian model using the Stan framework.
 #'
+#'
+#'**Models**
+#'
 #' Two models are implemented, which differ in the way the correlation over time is handled.
+#'
 #' In the default model (selected by setting `method="GP"`), a hidden Gaussian process (GP) model the true prevalence in order to take the correlation over time into account.
 #' The `GP` method uses a squared exponential kernel to characterize the correlation of the GP.
-#' This basically assumes that the correlation between the prevalence of two timepoints only depends on the distance between the timepoints (i.e. the time difference). fit two parameters $\lambda$
-#' Two parameters are used to model the squared exponential kernel (also known as "exponentiated quadratic kernel"): the lengthscale $\lambda$ and the output variance $\alpha^2$.
-#' The lengthscale $\lambda$ determines the length of the "wiggles".
-#' The output variance $\alpha^2$ is a scale factor that determines the average distance between the realizations of the GP.
+#' This basically assumes that the correlation between the prevalence of two timepoints only depends on the distance between the timepoints (i.e. the time difference).
+#' Two parameters are used to model the squared exponential kernel (also known as "exponentiated quadratic kernel"): the lengthscale `lambda` and the output variance `alpha^2`.
+#' The lengthscale `lambda` determines the length of the "wiggles".
+#' The output variance `alpha^2` is a scale factor that determines the average distance between the realizations of the GP.
 #' It characterizes the variance of the prevalence over time.
 #'
 #' The second (more basic) model (selected by setting `method="timepoint"`) estimates the prevalence at each timepoint without considering any correlation over time.
 #' It assumes one parameter for each timepoint in order to estimate the prevalence over time.
 #' The `timepoint` model is provided for the sake of comparison but the `GP` model should generally be preferred.
 #'
+#' **Specificity and sensitivity**
+#'
 #' The models adjust for imperfect sensitivity and specificity.
 #' They assume a default fixed specificity of 99.5% (can be modified through the `spec` argument).
-#' The sensitivity is fitted together with the prevalence parameters by using the data reported in Bendavid et al. (2020), which includes 3 sensitivity studies.
+#' The sensitivity is fitted together with the prevalence parameters by using the data reported in Bendavid et al. (2020), which includes three sensitivity studies.
+#'
+#' **Inference**
 #'
 #' The models calculate the pool test positivity over time from the prevalence (and the pool sizes `pool.size` given in `data`).
-#' It assumes that the number of positive pools `n.pos.pools` follow a binomial distribution : $\text{n.pos.pools}\sim Binomial(\text{n.pool},\text{"pool positivity"}).
+#' It assumes that the number of positive pools `n.pos.pools` follow a binomial distribution with probability being the test positivity.
 #'
 #' When multiple pooled test results are provided for at least one timepoint (for the same population), the model replace the binomial distribution a beta-binomial distribution.
-#' Overdispersion is characterized with the $\kappa$ parameter.
+#' Overdispersion is characterized with the `kappa` parameter.
 #'
 #' If the `pop` column in the `data` argument is absent, the model assumes only one population (i.e. it models one prevalence over time).
 #' If it is provided, the models estimate the prevalence over time for each of the populations present in `data`.
 #' This allows for a unique (and simultaneous) estimation of the sensitivity.
 #' The user should however consider running the populations separately, if some issues about the convergence of the Stan model are observed.
+#'
+#' **Priors**
+#'
+#' The priors can be specified through the `prior` argument, which a named list of vectors containing the hyperparameters of the priors.
+#' The names of the elements in the list should match with the names of the parameters.
+#'
+#' The lengthscale `lambda` has truncated normal prior distribution with default mean of 0 and standard deviation of 2.
+#' The output standard deviation `alpha` has a truncated normal prior with default mean of 0 and standard deviation of 2.
+#' The prior of the overdispersion `kappa` is obtained by adding `2` to an exponential distribution with default mean of 10.
+#' The parameter representing the average prevalence `logit_prev` has logit-normal prior, with default mean of -4 and standard deviation of 2.
+#' This corresponds to an average prevalence of 1.8% with 95% confidence intervals (CI) of (0.3%,48%).
+#' The sensitivity `sens` has a beta prior distribution whose default hyperparameters are respectively 190 and 40.
+#' This corresponds to a mean of approximately 82.6% and with 95% CI of (77.5%, 87.2%).
+#'
 #'
 #'
 #' @export
@@ -44,7 +66,7 @@
 #'   \item n.pools. Number of pools
 #'   \item n.pos.pools. Number of positive pools.
 #' }
-#' @param method Method used to analyse data (timepoint or GP)
+#' @param method Method used to analyse data ("timepoint" or "GP")
 #' @param spec Test specificity
 #' @param prior list of values for prior hyperparameters.
 #' @param return.par a logical indicating whether to return GP parameter estimates.
@@ -53,16 +75,17 @@
 #'     add `control=list(adapt_delta=0.99)`.
 #' @return A list containing the following elements:
 #' \itemize{
-#'   \item prev. A data frame displaying estimated prevalence over time (and populations).
-#'   \item prev_ratio. Ratio between two consecutive prevalence estimates.
-#'   \item mod_par. Estimates of some model parameters (returned if `return.par` is `TRUE`).
-#'   \item sampler_par. Stan diagnosis parameters (returned if `return.par` is `TRUE`).
-#'   \item time. Stan sampling time (returned if `return.par` is `TRUE`).
-#'   \item stanfit. `stanfit` object (returned if `return.stanfit` is `TRUE`).
+#'   \item `prev`. A data frame displaying estimated prevalence over time (and populations).
+#'   \item `prev_ratio`. Ratio between two consecutive prevalence estimates.
+#'   \item `mod_par`. Estimates of some model parameters (returned if `return.par` is `TRUE`).
+#'   \item `sampler_par`. Stan diagnosis parameters (returned if `return.par` is `TRUE`).
+#'   \item `time`. Stan sampling time (returned if `return.par` is `TRUE`).
+#'   \item `stanfit`. `stanfit` object (returned if `return.stanfit` is `TRUE`).
 #' }
 #' @importFrom dplyr %>%
 #' @examples
-
+#'
+#' ######################
 #' #Example 1
 #' #load data
 #' data(epipool_data1)
@@ -88,6 +111,7 @@
 #'   theme_bw() +
 #'   scale_y_continuous(name="Prevalence", labels = scales::percent)
 #'
+#' ######################
 #' #Example 2: estimate the prevalence of two populations
 #' #load data
 #' data(epipool_data2)
@@ -98,7 +122,7 @@
 #' #run model with GP
 #' out_timepoint = poolprev2(data, method="timepoint", return.par=TRUE) #takes a few seconds
 #' out_GP1 = poolprev2(data, method="GP", return.par=TRUE) #can take a few minutes
-#' out_GP2 = poolprev2(data, method="GP",prior=list(lengthscale=c(0,1),sd_GP=c(0,1)),
+#' out_GP2 = poolprev2(data, method="GP",prior=list(lambda=c(0,1),alpha=c(0,1)),
 #'                      return.par=TRUE) #can take a few minutes
 #'
 #' #plot prevalence
@@ -124,18 +148,23 @@
 
 poolprev <- function(data, method="GP",
                       spec=0.995,
-                      prior=NULL,
+                      prior=list(lambda=c(0,2),
+                                 alpha=c(0,2),
+                                 kappa=10,
+                                 logit_prev=c(-4,2),
+                                 sens=c(190,40)),
                       return.par=FALSE,
                       return.stanfit=FALSE, ...){
   #check that time is numeric and not a date
-  #adapt prior to argument
-  prior0=list(lengthscale=c(0,2),
-             sd_GP=c(0,2),
-             phi=1/10,
-             logit_prev=c(-4,2))
-  if(length(prior)>0){for(i in 1:length(prior)){
-    prior0[[which(names(prior0)==names(prior)[i])]] = prior[[i]]
-  }}
+  #Prior
+  #default prior (same as in argument)
+  prior_default=list(lambda=c(0,2), #lengthscale
+                      alpha=c(0,2), #GP standard deviation
+                      kappa=10, #phi parameter
+                      logit_prev=c(-4,2),
+                      sens=c(190,40))
+  #replace missing element in the user prior by the default prior
+  prior = c(prior,prior_default[setdiff(names(prior_default),names(prior))])
 
   #remove row with na values
   dim.data1 = dim(data)[1]
@@ -182,14 +211,14 @@ poolprev <- function(data, method="GP",
                   n_sens = c(85,37,35),
                   spec=spec,
                   #hyperparameters of the priors
-                  p_sens = c(190,40),
-                  p_intercept = prior0$logit_prev,
-                  p_lambda = prior0$lengthscale,
-                  p_alpha = prior0$sd_GP,
+                  p_sens = prior$sens,
+                  p_intercept = prior$logit_prev,
+                  p_lambda = prior$lambda,
+                  p_alpha = prior$alpha,
                   #overdispersion
                   N_phi=sum(phi_pos>0),
                   use_phi=structure(phi_pos,dim=length(pop_unique)),
-                  p_phi = prior0$phi,
+                  p_phi = 1/prior$kappa,
                   #inference
                   inference=1)
 
