@@ -79,7 +79,7 @@ generated quantities{
   array[N_pop, N_t-1] real prev_ratio;
   for(i in 1:N_pop){
     for(j in 1:(N_t-1)){
-      prev_ratio[i,j] = prev_f[i,j]/prev_f[i,j-1];
+      prev_ratio[i,j] =prev_f[i,j+1]/prev_f[i,j];
     }
   }
 }
