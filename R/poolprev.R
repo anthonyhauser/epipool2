@@ -91,9 +91,9 @@
 #' data(epipool_data1)
 #'
 #' #run model with method assuming a prevalence parameter every week
-#' out_timepoint = poolprev2(epipool_data1[[1]], method="timepoint", return.par=TRUE,return.stanfit=FALSE) #takes a few seconds
+#' out_timepoint = poolprev(epipool_data1[[1]], method="timepoint", return.par=TRUE,return.stanfit=FALSE) #takes a few seconds
 #' #run model with Gaussian process
-#' out_GP = poolprev2(epipool_data1[[1]], method="GP", return.par=TRUE,return.stanfit=FALSE) #can take a few minutes
+#' out_GP = poolprev(epipool_data1[[1]], method="GP", return.par=TRUE,return.stanfit=FALSE) #can take a few minutes
 #'
 #' #plot
 #' library(ggplot2)
@@ -120,9 +120,9 @@
 #'             epipool_data3[[1]] %>% dplyr::mutate(pop="pop2"))
 #'
 #' #run model with GP
-#' out_timepoint = poolprev2(data, method="timepoint", return.par=TRUE) #takes a few seconds
-#' out_GP1 = poolprev2(data, method="GP", return.par=TRUE) #can take a few minutes
-#' out_GP2 = poolprev2(data, method="GP",prior=list(lambda=c(0,1),alpha=c(0,1)),
+#' out_timepoint = poolprev(data, method="timepoint", return.par=TRUE) #takes a few seconds
+#' out_GP1 = poolprev(data, method="GP", return.par=TRUE) #can take a few minutes
+#' out_GP2 = poolprev(data, method="GP",prior=list(lambda=c(0,1),alpha=c(0,1)),
 #'                      return.par=TRUE) #can take a few minutes
 #'
 #' #plot prevalence
@@ -273,8 +273,6 @@ poolprev <- function(data, method="GP",
                             by="par")
 
     #prevalence ratio
-    print("--------------------------------")
-    print(rstan::summary(stan)$summary %>% rownames())
     prev_ratio = rstan::summary(stan,par="prev_ratio")$summary %>%
       tibble::as_tibble() %>%
       dplyr::mutate(time = rep(t.f[-1],length(pop_unique)),
