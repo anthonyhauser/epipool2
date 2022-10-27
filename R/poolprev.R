@@ -54,6 +54,10 @@
 #' The sensitivity `sens` has a beta prior distribution whose default hyperparameters are respectively 190 and 40.
 #' This corresponds to a mean of approximately 82.6% and with 95% CI of (77.5%, 87.2%).
 #'
+#' **Predictions**
+#'
+#' For `method="GP"`, the function can provide predictions of the prevalence at times `time.pred`.
+#' By default (i.e., when the argument `time.pred` is not specified), the model only estimates the prevalence at all the times present in the data.
 #'
 #'
 #' @export
@@ -68,6 +72,7 @@
 #' }
 #' @param method Method used to analyse data ("timepoint" or "GP")
 #' @param spec Test specificity
+#' @param time.pred Only when `method="GP"`. Times at which prevalence is predicted.
 #' @param prior list of values for prior hyperparameters.
 #' @param return.par a logical indicating whether to return GP parameter estimates.
 #' @param return.stanfit a logical indicating whether to return the stan model.
@@ -146,8 +151,10 @@
 #' print(out_GP2$par)
 
 
-poolprev <- function(data, method="GP",
+poolprev <- function(data,
+                     method="GP",
                       spec=0.995,
+                      time.pred=NULL,
                       prior=list(lambda=c(0,2),
                                  alpha=c(0,2),
                                  kappa=10,
@@ -178,7 +185,8 @@ poolprev <- function(data, method="GP",
   #rank time and calculate number of regions
   N=dim(data)[1] #number of observation
   t.unique = data$time %>% unique() %>% sort() #distinct time points with data
-  t.f = t.unique #time points on which GP is calculated (could include some prediction point in addition to t_unique)
+  if(method=="timepoint" & !is.null(time.pred)){stop("Method timepoint cannot make prediction. Select method=GP")}
+  t.f = c(t.unique,time.pred) %>% unique() %>% sort() #time points on which GP is calculated (could include some prediction point in addition to t_unique)
   pop_unique = data$pop %>% unique() %>% sort()
 
   #data
@@ -255,11 +263,13 @@ poolprev <- function(data, method="GP",
   if(return.par){
 
     #model par
-    mod_par = rstan::summary(stan, par=c("kappa","sens"))$summary  %>%
+    mod_par = rstan::summary(stan, par = c("kappa", "sens"))$summary %>%
       tibble::as_tibble() %>%
-      dplyr::mutate(par=rep(c("kappa","sens"),each=sum(phi_pos>0)),
-                    pop = rep(pop_unique[which(phi_pos>0)],2)) %>%
-      dplyr::select(pop,par,mean, median=`50%`,lwr=`2.5%`,upr=`97.5%`)
+      dplyr::mutate(par = c(rep(c("kappa"), sum(phi_pos > 0)),"sens"),
+                    pop = c(rep(pop_unique[which(phi_pos > 0)]),"")) %>%
+      dplyr::select(pop, par, mean, median = `50%`, lwr = `2.5%`, upr = `97.5%`)
+
+
     if(method=="GP"){
       mod_par = rbind(mod_par,
                   rstan::summary(stan, par=c("lambda","alpha"))$summary %>%

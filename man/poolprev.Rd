@@ -8,6 +8,7 @@ poolprev(
   data,
   method = "GP",
   spec = 0.995,
+  time.pred = NULL,
   prior = list(lambda = c(0, 2), alpha = c(0, 2), kappa = 10, logit_prev = c(-4, 2), sens
     = c(190, 40)),
   return.par = FALSE,
@@ -29,6 +30,8 @@ poolprev(
 \item{method}{Method used to analyse data ("timepoint" or "GP")}
 
 \item{spec}{Test specificity}
+
+\item{time.pred}{Only when \code{method="GP"}. Times at which prevalence is predicted.}
 
 \item{prior}{list of values for prior hyperparameters.}
 
@@ -102,6 +105,11 @@ The parameter representing the average prevalence \code{logit_prev} has logit-no
 This corresponds to an average prevalence of 1.8\% with 95\% confidence intervals (CI) of (0.3\%,48\%).
 The sensitivity \code{sens} has a beta prior distribution whose default hyperparameters are respectively 190 and 40.
 This corresponds to a mean of approximately 82.6\% and with 95\% CI of (77.5\%, 87.2\%).
+
+\strong{Predictions}
+
+For \code{method="GP"}, the function can provide predictions of the prevalence at times \code{time.pred}.
+By default (i.e., when the argument \code{time.pred} is not specified), the model only estimates the prevalence at all the times present in the data.
 }
 \examples{
 
