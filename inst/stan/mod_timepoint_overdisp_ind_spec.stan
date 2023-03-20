@@ -3,7 +3,7 @@ data {
   int N; //number of observations
   int N_t; //number of distinct time points
   int N_pop; //number of population
-  array[N] int rank_t; //rank of the time point related to the observations
+  array[N] int rank_t; ///rank of the time point related to the observations
   array[N] int pop; //rank of the population
   array[N_t] real t; //time points
   array[N] real s; //number of samples by pool
@@ -19,8 +19,6 @@ data {
   array[2] real p_sens;
   array[2] real p_intercept;
   real spec;
-  array[2] real p_alpha;
-  array[2] real p_lambda;
 
   //Overdispersion
   int N_phi;
@@ -35,50 +33,30 @@ transformed data {
 }
 
 parameters {
-  //True prevalence
-  array[N_pop] real intercept;
-  array[N_pop] vector[N_t] beta; //
-  array[N_pop] real <lower=0> lambda; // lengthscale of f
-  array[N_pop] real<lower=0> alpha;
-
+  array[N_pop] vector[N_t] logit_prev_f; //logit-transformed prevalence (done so that we have same priors as for GP model)
   real <lower=0,upper=1> sens; //sensitivity
-
   vector<lower=0>[N_phi] phi; //overdispersion parameter
 }
 
 transformed parameters {
   vector<lower=0>[N_phi] kappa=phi+2.0; //transformed overdisperion parameter
-
-  array[N_pop] vector[N_t] f;
   array[N_pop] vector[N_t] prev_f;
   array[N] real pool_pos;
 
-  array[N_pop] matrix[N_t, N_t] L_K;
-  array[N_pop] matrix[N_t, N_t] K;
-
-
   for(i in 1:N_pop){
-    K[i] = gp_exp_quad_cov(t, alpha[i], lambda[i]);
-    for (l in 1:N_t) K[i, l, l] = K[i, l, l] + delta;
-    L_K[i] = cholesky_decompose(K[i]);
-    f[i] = L_K[i] * beta[i];
-    prev_f[i] = inv_logit(intercept[i] + f[i]);
+    prev_f[i] = inv_logit(logit_prev_f[i]);
   }
 
   for(l in 1:N){
-    pool_pos[l] = 1.0 - spec * pow(1.0 - prev_f[pop[l],rank_t[l]] * sens, s[l]);
+    pool_pos[l] = 1.0 - pow(1.0 - (prev_f[pop[l],rank_t[l]] * sens + (1.0-prev_f[pop[l],rank_t[l]]) * (1.0-spec)),s[l]);
   }
 }
 
 model {
   // priors
   for(i in 1:N_pop){
-    beta[i] ~ normal(0, 1);
-    intercept[i] ~ normal(p_intercept[1], p_intercept[2]);
-    lambda[i] ~ normal(p_lambda[1], p_lambda[2]);
-    alpha[i] ~ normal(p_alpha[1], p_alpha[2]);
+    logit_prev_f[i] ~ normal(p_intercept[1], p_intercept[2]);
   }
-
   phi ~ exponential(p_phi);
   sens ~ beta(p_sens[1], p_sens[2]);
 
@@ -101,7 +79,7 @@ generated quantities{
   array[N_pop, N_t-1] real prev_ratio;
   for(i in 1:N_pop){
     for(j in 1:(N_t-1)){
-      prev_ratio[i,j] = prev_f[i,j+1]/prev_f[i,j];
+      prev_ratio[i,j] =prev_f[i,j+1]/prev_f[i,j];
     }
   }
 }
