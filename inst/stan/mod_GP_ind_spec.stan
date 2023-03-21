@@ -3,7 +3,7 @@ data {
   int N; //number of observations
   int N_t; //number of distinct time points
   int N_pop; //number of population
-  array[N] int rank_t; //rank of the time point related to the observations
+  array[N] int rank_t; ///rank of the time point related to the observations
   array[N] int pop; //rank of the population
   array[N_t] real t; //time points
   array[N] real s; //number of samples by pool
@@ -22,11 +22,6 @@ data {
   array[2] real p_alpha;
   array[2] real p_lambda;
 
-  //Overdispersion
-  int N_phi;
-  array[N_pop] int use_phi;
-  real p_phi;
-
   int inference;
 }
 
@@ -37,25 +32,22 @@ transformed data {
 parameters {
   //True prevalence
   array[N_pop] real intercept;
-  array[N_pop] vector[N_t] beta; //
+  array[N_pop] vector[N_t] beta;
   array[N_pop] real <lower=0> lambda; // lengthscale of f
   array[N_pop] real<lower=0> alpha;
 
   real <lower=0,upper=1> sens; //sensitivity
-
-  vector<lower=0>[N_phi] phi; //overdispersion parameter
 }
 
-transformed parameters {
-  vector<lower=0>[N_phi] kappa=phi+2.0; //transformed overdisperion parameter
 
+
+transformed parameters {
   array[N_pop] vector[N_t] f;
   array[N_pop] vector[N_t] prev_f;
   array[N] real pool_pos;
 
   array[N_pop] matrix[N_t, N_t] L_K;
   array[N_pop] matrix[N_t, N_t] K;
-
 
   for(i in 1:N_pop){
     K[i] = gp_exp_quad_cov(t, alpha[i], lambda[i]);
@@ -66,7 +58,7 @@ transformed parameters {
   }
 
   for(l in 1:N){
-    pool_pos[l] = 1.0 - spec * pow(1.0 - prev_f[pop[l],rank_t[l]] * sens, s[l]);
+    pool_pos[l] = 1.0 - pow(1.0 - (prev_f[pop[l],rank_t[l]] * sens + (1.0-prev_f[pop[l],rank_t[l]]) * (1.0-spec)),s[l]);
   }
 }
 
@@ -79,17 +71,11 @@ model {
     alpha[i] ~ normal(p_alpha[1], p_alpha[2]);
   }
 
-  phi ~ exponential(p_phi);
   sens ~ beta(p_sens[1], p_sens[2]);
 
   if(inference==1){
     for(i in 1:N){
-      if(use_phi[pop[i]]>0){
-        target += beta_binomial_lpmf(k[i] | n[i], kappa[use_phi[pop[i]]] * pool_pos[i],
-                                                  kappa[use_phi[pop[i]]] * (1 - pool_pos[i]));
-      }else{
-        target += binomial_lpmf(k[i] | n[i], pool_pos[i]);
-      }
+      target += binomial_lpmf(k[i] | n[i], pool_pos[i]);
     }
     for(i in 1:J_sens){
       target += binomial_lpmf(y_sens[i] | n_sens[i], sens);

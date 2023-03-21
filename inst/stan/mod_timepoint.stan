@@ -3,7 +3,7 @@ data {
   int N; //number of observations
   int N_t; //number of distinct time points
   int N_pop; //number of population
-  array[N] int rank_t; ///rank of the time point related to the observations
+  array[N] int rank_t; //rank of the time point related to the observations
   array[N] int pop; //rank of the population
   array[N_t] real t; //time points
   array[N] real s; //number of samples by pool
@@ -42,7 +42,7 @@ transformed parameters {
   }
 
   for(l in 1:N){
-    pool_pos[l] = 1.0 - pow(1.0 - (prev_f[pop[l],rank_t[l]] * sens + (1.0-prev_f[pop[l],rank_t[l]]) * (1.0-spec)),s[l]);
+    pool_pos[l] = 1.0 - spec * pow(1.0 - prev_f[pop[l],rank_t[l]] * sens, s[l]);
   }
 }
 
