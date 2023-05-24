@@ -24,9 +24,14 @@
 #'
 #' **Specificity and sensitivity**
 #'
-#' The models adjust for imperfect sensitivity and specificity.
-#' They assume a default fixed specificity of 99.5% (can be modified through the `spec` argument).
-#' The sensitivity is fitted together with the prevalence parameters by using the data reported in Bendavid et al. (2020), which includes three sensitivity studies.
+#' The models adjust for imperfect test sensitivity and specificity.
+#' The test specificity is assumed to be fixed and can be specified through the `spec` argument (default is 100%).
+#'
+#' The test sensitivity is fitted together with the prevalence parameters using data from test sensitivity studies.
+#' This data are specified through the `sens_df` argument.
+#' `sens_df` should be a data frame, where each row represents a study, and it should contains two columns named `n_tot` and `n_pos`.
+#' The `n_tot` column should report the number of samples tested for sensitivity in a given study and the `n_pos` column the number of positive samples.
+#' By default, the model uses test sensitivity data from Marando et al. (2022), which includes results from 20 sub-studies investigating the sensitivity of RT-PCR SARS-CoV-2 tests.
 #'
 #' **Inference**
 #'
@@ -51,8 +56,8 @@
 #' The prior of the overdispersion `kappa` is obtained by adding `2` to an exponential distribution with default mean of 10.
 #' The parameter representing the average prevalence `logit_prev` has logit-normal prior, with default mean of -4 and standard deviation of 2.
 #' This corresponds to an average prevalence of 1.8% with 95% confidence intervals (CI) of (0.3%,48%).
-#' The sensitivity `sens` has a beta prior distribution whose default hyperparameters are respectively 190 and 40.
-#' This corresponds to a mean of approximately 82.6% and with 95% CI of (77.5%, 87.2%).
+#' The sensitivity `sens` has a beta prior distribution whose default hyperparameters are respectively 85 and 15.
+#' This corresponds to a mean of approximately 85% and with 95% CI of (77.4%, 91.3%).
 #'
 #' **Predictions**
 #'
@@ -70,12 +75,13 @@
 #'   \item n.pools. Number of pools
 #'   \item n.pos.pools. Number of positive pools.
 #' }
-#' @param method Method used to analyse data ("timepoint" or "GP")
-#' @param spec Test specificity
+#' @param method Method used to analyse data ("timepoint" or "GP").
+#' @param spec Test specificity.
+#' @param sens_df A data frame containing test sensitivity data.
 #' @param time.pred Only when `method="GP"`. Times at which prevalence is predicted.
-#' @param prior list of values for prior hyperparameters.
-#' @param return.par a logical indicating whether to return GP parameter estimates.
-#' @param return.stanfit a logical indicating whether to return the stan model.
+#' @param prior A list of values for prior hyperparameters.
+#' @param return.par A logical indicating whether to return GP parameter estimates.
+#' @param return.stanfit A logical indicating whether to return the stan model.
 #' @param ... Arguments passed to `rstan::sampling` (e.g. iter, chains). If there are divergences,
 #'     add `control=list(adapt_delta=0.99)`.
 #' @return A list containing the following elements:
@@ -91,85 +97,88 @@
 #' @examples
 #'
 #' ######################
-#' #Example 1
+#' #Example 1: estimated the prevalence over time of a population from data with imperfect test sensitivity
 #' #load data
 #' data(epipool_data1)
 #'
 #' #run model with method assuming a prevalence parameter every week
-#' out_timepoint = poolprev(epipool_data1[[1]], method="timepoint", return.par=TRUE,return.stanfit=FALSE) #takes a few seconds
+#' out_timepoint = poolprev(epipool_data1[[1]], method="timepoint", spec=1, return.par=TRUE,return.stanfit=FALSE) #takes a few seconds
 #' #run model with Gaussian process
-#' out_GP = poolprev(epipool_data1[[1]], method="GP", return.par=TRUE,return.stanfit=FALSE) #can take a few minutes
+#' out_GP = poolprev(epipool_data1[[1]], method="GP", spec=1, return.par=TRUE,return.stanfit=FALSE) #can take a few minutes
 #'
 #' #plot
 #' library(ggplot2)
 #' library(dplyr)
 #' dplyr::left_join(epipool_data1[[1]],
-#'           rbind(out_timepoint$prev %>% dplyr::mutate(method="timepoint"),
-#'                 out_GP$prev %>% dplyr::mutate(method="GP")),
-#'           by="time") %>%
+#'              rbind(out_timepoint$prev %>% dplyr::mutate(method="timepoint"),
+#'                    out_GP$prev %>% dplyr::mutate(method="GP")),multiple = "all",
+#'              by="time") %>%
+#' ggplot(aes(x=time))+
+#' geom_ribbon(aes(ymin=lwr,ymax=upr),fill="black",alpha=0.1)+
+#' geom_line(aes(y=mean),col="black",linewidth=0.8)+
+#' geom_point(aes(y=mean),col="black",linewidth=2)+
+#' geom_point(aes(y=prev),col="red",linewidth=2) +
+#' facet_grid(.~method) +
+#' theme_bw() +
+#' scale_y_continuous(name="Prevalence", labels = scales::percent)
+#'
+#' ######################
+#' #Example 2: estimate the prevalence of two populations from data with imperfect test sensitivity and specificity
+#' #load data
+#' data(epipool_data2)
+#' data(epipool_data3)
+#' data = rbind(epipool_data2[[1]] %>% dplyr::mutate(pop="pop1"),
+#'          epipool_data3[[1]] %>% dplyr::mutate(pop="pop2"))
+#'
+#' #run model with GP
+#' out_timepoint = poolprev(data, method="timepoint", return.par=TRUE) #takes a few seconds
+#' out_GP1 = poolprev(data, method="GP", spec=0.999, return.par=TRUE) #can take a few minutes
+#' out_GP2 = poolprev(data, method="GP", spec=0.999, prior=list(lambda=c(0,1),alpha=c(0,1)),
+#'                return.par=TRUE) #can take a few minutes
+#'
+#' #plot prevalence
+#' library(ggplot2)
+#' left_join(data,
+#'       rbind(out_timepoint$prev %>% dplyr::mutate(method="timepoint"),
+#'             out_GP1$prev %>% dplyr::mutate(method="GP"),
+#'             out_GP2$prev %>% dplyr::mutate(method="GP with smaller lengthscale/sd priors")),
+#'       multiple = "all",
+#'           by=c("time","pop")) %>%
 #'   ggplot(aes(x=time))+
 #'   geom_ribbon(aes(ymin=lwr,ymax=upr),fill="black",alpha=0.1)+
 #'   geom_line(aes(y=mean),col="black",size=0.8)+
 #'   geom_point(aes(y=mean),col="black",size=2)+
 #'   geom_point(aes(y=prev),col="red",size=2) +
-#'   facet_grid(.~method) +
+#'   facet_grid(method~pop) +
 #'   theme_bw() +
 #'   scale_y_continuous(name="Prevalence", labels = scales::percent)
-#'
-#' ######################
-#' #Example 2: estimate the prevalence of two populations
-#' #load data
-#' data(epipool_data2)
-#' data(epipool_data3)
-#' data = rbind(epipool_data2[[1]] %>% dplyr::mutate(pop="pop1"),
-#'             epipool_data3[[1]] %>% dplyr::mutate(pop="pop2"))
-#'
-#' #run model with GP
-#' out_timepoint = poolprev(data, method="timepoint", return.par=TRUE) #takes a few seconds
-#' out_GP1 = poolprev(data, method="GP", return.par=TRUE) #can take a few minutes
-#' out_GP2 = poolprev(data, method="GP",prior=list(lambda=c(0,1),alpha=c(0,1)),
-#'                      return.par=TRUE) #can take a few minutes
-#'
-#' #plot prevalence
-#' library(ggplot2)
-#' left_join(data,
-#'           rbind(out_timepoint$prev %>% dplyr::mutate(method="timepoint"),
-#'                 out_GP1$prev %>% dplyr::mutate(method="GP"),
-#'                 out_GP2$prev %>% dplyr::mutate(method="GP with smaller lengthscale/sd priors")), by=c("time","pop")) %>%
-#' ggplot(aes(x=time))+
-#' geom_ribbon(aes(ymin=lwr,ymax=upr),fill="black",alpha=0.1)+
-#' geom_line(aes(y=mean),col="black",size=0.8)+
-#' geom_point(aes(y=mean),col="black",size=2)+
-#' geom_point(aes(y=prev),col="red",size=2) +
-#' facet_grid(method~pop) +
-#' theme_bw() +
-#' scale_y_continuous(name="Prevalence", labels = scales::percent)
 #'
 #' #compare parameter estimates
 #' print(out_timepoint$par)
 #' print(out_GP1$par)
 #' print(out_GP2$par)
 
-
 poolprev <- function(data,
                      method="GP",
-                      spec=0.995,
-                      time.pred=NULL,
-                      prior=list(lambda=c(0,2),
-                                 alpha=c(0,2),
-                                 kappa=10,
-                                 logit_prev=c(-4,2),
-                                 sens=c(190,40)),
-                      return.par=FALSE,
-                      return.stanfit=FALSE, ...){
+                     spec = 1,
+                     sens_df = data.frame(n_tot = c(85, 85, 150, 150, 787, 38, 19, 72, 301, 80, 80, 80, 4943, 452, 142, 142, 142, 152, 75, 51),
+                                          n_pos = c(78, 64, 138, 126, 751, 30, 18, 64, 226, 73, 74, 77, 4037, 437, 130, 116, 114, 129, 62, 49)),
+                     time.pred=NULL,
+                     prior=list(lambda=c(0,2),
+                                alpha=c(0,2),
+                                kappa=10,
+                                logit_prev=c(-4,2),
+                                sens=c(85,15)),
+                     return.par=FALSE,
+                     return.stanfit=FALSE, ...){
   #check that time is numeric and not a date
   #Prior
   #default prior (same as in argument)
   prior_default=list(lambda=c(0,2), #lengthscale
-                      alpha=c(0,2), #GP standard deviation
-                      kappa=10, #phi parameter
-                      logit_prev=c(-4,2),
-                      sens=c(190,40))
+                     alpha=c(0,2), #GP standard deviation
+                     kappa=10, #phi parameter
+                     logit_prev=c(-4,2),
+                     sens=c(190,40))
   #replace missing element in the user prior by the default prior
   prior = c(prior,prior_default[setdiff(names(prior_default),names(prior))])
 
@@ -214,9 +223,9 @@ poolprev <- function(data,
                   n = structure(as.integer(data$n.pools),dim=N), #number of pools
                   k = structure(as.integer(data$n.pos.pools),dim=N), #number of positive pools
                   #data sensitivity specificity
-                  J_sens = 3,
-                  y_sens = c(78,27,25),
-                  n_sens = c(85,37,35),
+                  J_sens = dim(sens_df)[1],
+                  y_sens = sens_df$n_pos,
+                  n_sens = sens_df$n_tot,
                   spec=spec,
                   #hyperparameters of the priors
                   p_sens = prior$sens,
@@ -272,15 +281,15 @@ poolprev <- function(data,
 
     if(method=="GP"){
       mod_par = rbind(mod_par,
-                  rstan::summary(stan, par=c("lambda","alpha"))$summary %>%
-                  tibble::as_tibble() %>%
-                  dplyr::mutate(par=rep(c("lambda","alpha"),each=length(pop_unique)),
-                                pop = rep(pop_unique,2)) %>%
-                  dplyr::select(pop,par,mean, median=`50%`,lwr=`2.5%`,upr=`97.5%`))
+                      rstan::summary(stan, par=c("lambda","alpha"))$summary %>%
+                        tibble::as_tibble() %>%
+                        dplyr::mutate(par=rep(c("lambda","alpha"),each=length(pop_unique)),
+                                      pop = rep(pop_unique,2)) %>%
+                        dplyr::select(pop,par,mean, median=`50%`,lwr=`2.5%`,upr=`97.5%`))
     }
     mod_par = mod_par %>% dplyr::left_join(data.frame(par=c("kappa","sens","lambda","alpha"),
-                                       desc=c("overdispersion parameter","sensitivity","GP lengthscale","GP sd")),
-                            by="par")
+                                                      desc=c("overdispersion parameter","sensitivity","GP lengthscale","GP sd")),
+                                           by="par")
 
     #prevalence ratio
     prev_ratio = rstan::summary(stan,par="prev_ratio")$summary %>%
