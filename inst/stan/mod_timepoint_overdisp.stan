@@ -63,8 +63,8 @@ model {
   if(inference==1){
     for(i in 1:N){
       if(use_phi[pop[i]]>0){
-        target += beta_binomial_lpmf(k[i] | n[i], kappa[use_phi[pop[i]]] * pool_pos[i],
-                                                  kappa[use_phi[pop[i]]] * (1 - pool_pos[i]));
+        target += beta_binomial_lpmf(k[i] | n[i], kappa[use_phi[pop[i]]] * pool_pos[i] + 1e-6,
+                                                  kappa[use_phi[pop[i]]] * (1 - pool_pos[i]) + 1e-6);
       }else{
         target += binomial_lpmf(k[i] | n[i], pool_pos[i]);
       }

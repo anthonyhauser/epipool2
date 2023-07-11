@@ -239,18 +239,20 @@ poolprev <- function(data,
                   #inference
                   inference=1)
 
+  initfun <- function() { list(sens=rbeta(1,standata$p_sens[1],standata$p_sens[2])) }
+
   #run the stan model
   if(all(phi_pos==0)){
     if(method=="timepoint"){
-      stan <- rstan::sampling(stanmodels$mod_timepoint, data = standata, ...,cores = getOption("mc.cores", 4L))
+      stan <- rstan::sampling(stanmodels$mod_timepoint, data = standata, init = initfun, ...,cores = getOption("mc.cores", 4L))
     }else if(method=="GP"){
-      stan <- rstan::sampling(stanmodels$mod_GP, data = standata, ...,cores = getOption("mc.cores", 4L))
+      stan <- rstan::sampling(stanmodels$mod_GP, data = standata, init = initfun, ...,cores = getOption("mc.cores", 4L))
     }else{stop("Method should be either timepoint or GP")}
   }else{
     if(method=="timepoint"){
-      stan <- rstan::sampling(stanmodels$mod_timepoint_overdisp, data = standata, ...,cores = getOption("mc.cores", 4L))
+      stan <- rstan::sampling(stanmodels$mod_timepoint_overdisp, data = standata, init = initfun, ...,cores = getOption("mc.cores", 4L))
     }else if(method=="GP"){
-      stan <- rstan::sampling(stanmodels$mod_GP_overdisp, data = standata, ...,cores = getOption("mc.cores", 4L))
+      stan <- rstan::sampling(stanmodels$mod_GP_overdisp, data = standata, init = initfun, ...,cores = getOption("mc.cores", 4L))
     }else{stop("Method should be either timepoint or GP")}
   }
 
