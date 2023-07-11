@@ -1,6 +1,6 @@
 Package: epipool
 Title: Estimate prevalence from pooled test results
-Version: 0.1.1
+Version: 0.2.0
 Authors@R: 
     person("Anthony", "Hauser", , "anthonyhauser06@gmail.ch", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-7221-1929"))
